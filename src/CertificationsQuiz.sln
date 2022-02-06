@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.32106.194
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertificationsQuiz", "CertificationsQuiz\CertificationsQuiz.csproj", "{BFE5F217-1BF6-419F-9050-0389674ED9F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CertificationsQuiz", "CertificationsQuiz\CertificationsQuiz.csproj", "{BFE5F217-1BF6-419F-9050-0389674ED9F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertificationsQuiz.Tests", "CertificationsQuiz.Tests\CertificationsQuiz.Tests.csproj", "{32A86F8F-9C32-4C2B-908F-63A3F41DE3CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{BFE5F217-1BF6-419F-9050-0389674ED9F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BFE5F217-1BF6-419F-9050-0389674ED9F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BFE5F217-1BF6-419F-9050-0389674ED9F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32A86F8F-9C32-4C2B-908F-63A3F41DE3CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32A86F8F-9C32-4C2B-908F-63A3F41DE3CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32A86F8F-9C32-4C2B-908F-63A3F41DE3CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32A86F8F-9C32-4C2B-908F-63A3F41DE3CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
