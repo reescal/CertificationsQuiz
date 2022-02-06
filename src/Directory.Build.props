@@ -1,0 +1,8 @@
+﻿<Project>
+    <PropertyGroup>
+        <VersionPrefix>3.0.0</VersionPrefix>
+        <VersionSuffix>dev</VersionSuffix>
+        <Copyright>(c) 2021 Headspring</Copyright>
+        <LangVersion>8.0</LangVersion>
+    </PropertyGroup>
+</Project>
