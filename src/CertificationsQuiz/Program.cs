@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CertificationsQuiz.Infrastructure;
 
 namespace CertificationsQuiz
 {
@@ -14,6 +15,8 @@ namespace CertificationsQuiz
             builder.RootComponents.Add<App>("#app");
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+            builder.Services.AddHttpClient<IQuizService, QuizService>(x => x.BaseAddress = new Uri("http://localhost:7071"));
 
             await builder.Build().RunAsync();
         }
