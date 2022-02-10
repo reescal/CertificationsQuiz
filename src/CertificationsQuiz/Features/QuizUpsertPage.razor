@@ -1,0 +1,53 @@
+﻿@page "/quiz/new"
+@page "/quiz/{_quizId}/edit"
+@using MediatR
+@inject IMediator _mediator
+
+<h3>@_title</h3>
+
+<EditForm Model="@_command" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Certification</label>
+        <InputText id="certification" class="form-control" @bind-Value="_command.Certification" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Section</label>
+        <InputText id="skill" class="form-control" @bind-Value="_command.Section" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Subsection</label>
+        <InputText id="topic" class="form-control" @bind-Value="_command.Subsection" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Topic</label>
+        <InputText id="title" class="form-control" @bind-Value="_command.Topic" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public string _quizId { get; set; }
+
+    private string _title = "Create Quiz";
+
+    private QuizUpsert.Command _command = new QuizUpsert.Command();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_quizId != null)
+        {
+            _command = await _mediator.Send(new QuizUpsert.Query() {Id = _quizId});
+            _title = "Edit Quiz";
+        }
+    }
+
+    private async Task HandleValidSubmit() => await _mediator.Send(_command);
+}

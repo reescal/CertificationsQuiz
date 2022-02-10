@@ -2,23 +2,50 @@
 @using CertificationsQuiz.Infrastructure
 @inject IQuizService quizService
 
-<h1>Hello, world!</h1>
+<h1>Certification Quizzes</h1>
 
-Welcome to your new app.
+<a class="btn btn-primary" href="/quiz/new" role="button">Create Quiz</a>
 
-@if (quizzes != null)
+@if (_quizzes == null)
 {
-    foreach(var quiz in quizzes)
-    {
-        @quiz.Certification
-    }
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th></th>
+            <th>Certification</th>
+            <th>Section</th>
+            <th>Subsection</th>
+            <th>Topic</th>
+            <th></th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var quiz in _quizzes)
+        {
+            <tr>
+                <td><input type="checkbox" /></td>
+                <td>@quiz.Certification</td>
+                <td>@quiz.Section</td>
+                <td>@quiz.Subsection</td>
+                <td>@quiz.Topic</td>
+                <td><a href="/Quiz/@quiz.Id/Edit"><span class="material-icons">edit</span></a></td>
+                <td><span class="material-icons">delete</span></td>
+            </tr>
+        }
+        </tbody>
+    </table>
 }
 
 @code
 {
-    public IEnumerable<Quiz> quizzes { get; set; }
+    public IEnumerable<Quiz> _quizzes { get; set; }
     protected override async Task OnInitializedAsync()
     {
-        quizzes = await quizService.Get();
+        _quizzes = await quizService.Get();
     }
 }

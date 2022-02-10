@@ -4,8 +4,10 @@ using CertificationsQuiz.Shared;
 
 namespace CertificationsQuiz.Infrastructure
 {
-    interface IQuizService
+    public interface IQuizService
     {
         Task<IEnumerable<Quiz>> Get();
+        Task<Quiz> GetById(string id);
+        Task<Quiz> Upsert(string id, PostQuiz quiz);
     }
 }
