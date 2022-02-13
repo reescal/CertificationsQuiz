@@ -1,0 +1,53 @@
+﻿@page "/quiz/{QuizId}/questions"
+@using MediatR
+@using CertificationsQuiz.Infrastructure
+@inject IMediator _mediator
+@inject IQuestionService _questionService
+@inject IQuizService _quizService
+
+<h3>@_command.Certification - @_command.Topic</h3>
+
+<a class="btn btn-primary" href="/quiz/@QuizId/question/new" role="button">Add Question</a>
+
+@if (_questions != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Body</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var question in _questions)
+            {
+                <tr>
+                    <td>@question.Body</td>
+                    <td><a href="/Quiz/@QuizId/question/@question.Id/edit"><span class="material-icons">edit</span></a></td>
+                    <td><a href="#" @onclick="() => DeleteQuestion(question.Id)"><span class="material-icons">delete</span></a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public string QuizId { get; set; }
+
+    private QuizUpsert.Command _command = new QuizUpsert.Command();
+    private IEnumerable<Question> _questions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _command = await _mediator.Send(new QuizUpsert.Query() { Id = QuizId });
+        _questions = await _quizService.GetQuizQuestions(QuizId);
+    }
+
+    async Task DeleteQuestion(string id)
+    {
+        await _questionService.Delete(id);
+        _questions = _questions.Where(x => x.Id != id);
+    }
+}
