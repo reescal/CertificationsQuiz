@@ -8,6 +8,9 @@ namespace CertificationsQuiz.Shared
         {
             CreateMap<SubmitQuiz, Quiz>();
             CreateMap<PostQuiz, SubmitQuiz>();
+
+            CreateMap<SubmitQuestion, Question>();
+            CreateMap<PostQuestion, SubmitQuestion>();
         }
     }
 }
