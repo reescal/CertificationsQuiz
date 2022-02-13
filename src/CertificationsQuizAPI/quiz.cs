@@ -116,16 +116,30 @@ namespace Headspring.CertificationsQuiz
             [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
             string id)
         {
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("CertificationsQuiz", "Items");
-            var document = client.CreateDocumentQuery(collectionUri).Where(t => t.Id == id)
-                    .AsEnumerable().FirstOrDefault();
+            return await Helpers.Delete(client, id);
+        }      
 
-            if (document == null)
-                return new NotFoundResult();
-                
-            await client.DeleteDocumentAsync(document.SelfLink, 
-                new Microsoft.Azure.Documents.Client.RequestOptions { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(document.Id) });
-            return new OkResult();
+        [FunctionName("quizQuestions")]
+        [OpenApiOperation(operationId: "GetQuizQuestions", tags: new[] { "Quiz" })]
+        [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(IEnumerable<Question>), Description = "The OK response")]
+        public async Task<IActionResult> GetQuizQuestions(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}/questions")] HttpRequest req,
+            string id)
+        {
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c WHERE c.QuizId ='{id}'");
+
+            List<Question> quizQuestions = new List<Question>();
+
+            var feedIterator = _container.GetItemQueryIterator<Question>(queryDefinition);
+
+            while (feedIterator.HasMoreResults)
+                foreach (var question in await feedIterator.ReadNextAsync())
+                    quizQuestions.Add(question);
+
+            return new OkObjectResult(quizQuestions);
         }
     }
 }
