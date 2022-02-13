@@ -34,7 +34,7 @@ else
                 <td>@quiz.Subsection</td>
                 <td>@quiz.Topic</td>
                 <td><a href="/Quiz/@quiz.Id/Edit"><span class="material-icons">edit</span></a></td>
-                <td><span class="material-icons">delete</span></td>
+                <td><a href="#" @onclick="() => DeleteQuiz(quiz.Id)"><span class="material-icons">delete</span></a></td>
             </tr>
         }
         </tbody>
@@ -43,9 +43,13 @@ else
 
 @code
 {
-    public IEnumerable<Quiz> _quizzes { get; set; }
-    protected override async Task OnInitializedAsync()
+    IEnumerable<Quiz> _quizzes;
+
+    protected override async Task OnInitializedAsync() => _quizzes = await quizService.Get();
+
+    async Task DeleteQuiz(string id)
     {
-        _quizzes = await quizService.Get();
+        await quizService.Delete(id);
+        _quizzes = _quizzes.Where(x => x.Id != id);
     }
 }

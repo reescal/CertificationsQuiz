@@ -36,10 +36,10 @@ namespace CertificationsQuiz.Features
 
         public class CommandHandler : IRequestHandler<Command, Quiz>
         {
-            private readonly QuizService _quizService;
+            private readonly IQuizService _quizService;
             private readonly IMapper _mapper;
         
-            public CommandHandler(QuizService quizService, IMapper mapper)
+            public CommandHandler(IQuizService quizService, IMapper mapper)
             {
                 _quizService = quizService;
                 _mapper = mapper;

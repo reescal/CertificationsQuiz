@@ -41,5 +41,7 @@ namespace CertificationsQuiz.Infrastructure
             return await JsonSerializer.DeserializeAsync<Quiz>
                     (stream, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
+
+        public async Task Delete(string id) => await _httpClient.DeleteAsync($"api/quiz/{id}");
     }
 }

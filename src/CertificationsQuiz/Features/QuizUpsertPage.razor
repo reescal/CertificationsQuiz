@@ -1,7 +1,8 @@
 ﻿@page "/quiz/new"
-@page "/quiz/{_quizId}/edit"
+@page "/quiz/{QuizId}/edit"
 @using MediatR
 @inject IMediator _mediator
+@inject NavigationManager _navManager
 
 <h3>@_title</h3>
 
@@ -34,7 +35,7 @@
 
 @code {
     [Parameter]
-    public string _quizId { get; set; }
+    public string QuizId { get; set; }
 
     private string _title = "Create Quiz";
 
@@ -42,12 +43,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (_quizId != null)
+        if (QuizId != null)
         {
-            _command = await _mediator.Send(new QuizUpsert.Query() {Id = _quizId});
+            _command = await _mediator.Send(new QuizUpsert.Query() {Id = QuizId});
             _title = "Edit Quiz";
         }
     }
 
-    private async Task HandleValidSubmit() => await _mediator.Send(_command);
+    private async Task HandleValidSubmit()
+    {
+        await _mediator.Send(_command);
+        _navManager.NavigateTo(_navManager.BaseUri);
+    }
+
 }
