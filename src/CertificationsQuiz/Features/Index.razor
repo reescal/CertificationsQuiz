@@ -22,6 +22,7 @@ else
             <th>Topic</th>
             <th></th>
             <th></th>
+            <th></th>
         </tr>
         </thead>
         <tbody>
@@ -34,6 +35,7 @@ else
                 <td>@quiz.Subsection</td>
                 <td>@quiz.Topic</td>
                 <td><a href="/Quiz/@quiz.Id/Edit"><span class="material-icons">edit</span></a></td>
+                <td><a href="/Quiz/@quiz.Id/Questions"><span class="material-icons">quiz</span></a></td>
                 <td><a href="#" @onclick="() => DeleteQuiz(quiz.Id)"><span class="material-icons">delete</span></a></td>
             </tr>
         }

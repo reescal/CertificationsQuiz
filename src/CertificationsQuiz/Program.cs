@@ -26,6 +26,7 @@ namespace CertificationsQuiz
             builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
             builder.Services.AddScoped<IQuizService, QuizService>();
+            builder.Services.AddScoped<IQuestionService, QuestionService>();
 
             var assembly = Assembly.GetExecutingAssembly();
             builder.Services.AddMediatR(assembly);

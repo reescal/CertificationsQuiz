@@ -8,6 +8,9 @@ namespace CertificationsQuiz.Features
         {
             CreateMap<Quiz, QuizUpsert.Command>();
             CreateMap<QuizUpsert.Command, PostQuiz>();
+
+            CreateMap<Question, QuestionUpsert.Command>();
+            CreateMap<QuestionUpsert.Command, PostQuestion>();
         }
     }
 }

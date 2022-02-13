@@ -10,5 +10,7 @@ namespace CertificationsQuiz.Infrastructure
         Task<Quiz> GetById(string id);
         Task<Quiz> Upsert(string id, PostQuiz quiz);
         Task Delete(string id);
+
+        Task<IEnumerable<Question>> GetQuizQuestions(string id);
     }
 }
