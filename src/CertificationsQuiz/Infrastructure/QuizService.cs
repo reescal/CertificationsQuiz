@@ -32,7 +32,7 @@ namespace CertificationsQuiz.Infrastructure
 
         public async Task<Quiz> Upsert(string id, PostQuiz quiz)
         {
-            var apiResponse = id == null ? await _httpClient.PostAsJsonAsync($"api/quiz", quiz) : await _httpClient.PostAsJsonAsync($"api/quiz/{id}", quiz);
+            var apiResponse = id == null ? await _httpClient.PostAsJsonAsync($"api/quiz", quiz) : await _httpClient.PostAsJsonAsync($"api/quiz?id={id}", quiz);
 
             if (!apiResponse.IsSuccessStatusCode)
                 return null;
@@ -43,5 +43,12 @@ namespace CertificationsQuiz.Infrastructure
         }
 
         public async Task Delete(string id) => await _httpClient.DeleteAsync($"api/quiz/{id}");
+
+        public async Task<IEnumerable<Question>> GetQuizQuestions(string id)
+        {
+            var apiResponse = await _httpClient.GetStreamAsync($"api/quiz/{id}/questions");
+            return await JsonSerializer.DeserializeAsync<IEnumerable<Question>>
+                (apiResponse, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+        }
     }
 }
