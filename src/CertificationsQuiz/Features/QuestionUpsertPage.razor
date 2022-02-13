@@ -1,0 +1,52 @@
+﻿@page "/quiz/{QuizId}/question/new"
+@page "/quiz/{QuizId}/question/{QuestionId}/edit"
+@using MediatR
+@inject IMediator _mediator
+@inject NavigationManager _navManager
+
+<h3>@_title</h3>
+
+<EditForm Model="@_command" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Body</label>
+        <InputText id="certification" class="form-control" @bind-Value="_command.Body" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Answer</label>
+        <InputText id="skill" class="form-control" @bind-Value="_command.Answer" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public string QuizId { get; set; }
+    [Parameter]
+    public string QuestionId { get; set; }
+
+    private string _title = "Create Question";
+
+    private QuestionUpsert.Command _command = new QuestionUpsert.Command();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (QuizId != null && QuestionId != null)
+        {
+            _command = await _mediator.Send(new QuestionUpsert.Query() { Id = QuestionId });
+            _title = "Edit Question";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        _command.QuizId = QuizId;
+        _command.IncorrectChoices = new[] {"A", "B"};
+        await _mediator.Send(_command);
+        _navManager.NavigateTo(_navManager.BaseUri + $"quiz/{QuizId}/Questions");
+    }
+}
