@@ -34,7 +34,7 @@ namespace Headspring.CertificationsQuiz
 
         [FunctionName("quiz")]
         [OpenApiOperation(operationId: "GetQuizzes", tags: new[] { "Quiz" })]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(IEnumerable<Quiz>), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<Quiz>), Description = "The OK response")]
         public IActionResult GetQuizzes(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
             [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
@@ -47,7 +47,7 @@ namespace Headspring.CertificationsQuiz
         [FunctionName("quizById")]
         [OpenApiOperation(operationId: "GetQuizById", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(Quiz), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(Quiz), Description = "The OK response")]
         public IActionResult GetQuizById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}")] HttpRequest req,
             [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
@@ -110,7 +110,7 @@ namespace Headspring.CertificationsQuiz
         [FunctionName("deleteQuiz")]
         [OpenApiOperation(operationId: "DeleteQuiz", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
         public static async Task<IActionResult> DeleteQuiz(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "quiz/{id}")]HttpRequest req,
             [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
@@ -122,7 +122,7 @@ namespace Headspring.CertificationsQuiz
         [FunctionName("quizQuestions")]
         [OpenApiOperation(operationId: "GetQuizQuestions", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(IEnumerable<Question>), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<Question>), Description = "The OK response")]
         public async Task<IActionResult> GetQuizQuestions(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}/questions")] HttpRequest req,
             string id)
@@ -139,7 +139,35 @@ namespace Headspring.CertificationsQuiz
                 foreach (var question in await feedIterator.ReadNextAsync())
                     quizQuestions.Add(question);
 
-            return new OkObjectResult(quizQuestions);
+            return new OkObjectResult(quizQuestions);           
+        }      
+
+        [FunctionName("quizzesQuestions")]
+        [OpenApiOperation(operationId: "GetQuizzesQuestions", tags: new[] { "Quiz" })]
+        [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(IEnumerable<string>), Description = "Quizzes", Required = true)]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<string>), Description = "The OK response")]
+        public async Task<IActionResult> GetQuizzesQuestions(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "quizzes/questions")] HttpRequest req)
+        {
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var quizzesIds = JsonConvert.DeserializeObject<IEnumerable<string>>(requestBody);
+
+            List<string> quizzesQuestions = new List<string>();
+
+            foreach(var quizId in quizzesIds)
+            {
+                QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c WHERE c.QuizId ='{quizId}'");
+
+                var feedIterator = _container.GetItemQueryIterator<Question>(queryDefinition);
+
+                while (feedIterator.HasMoreResults)
+                    foreach (var question in await feedIterator.ReadNextAsync())
+                        quizzesQuestions.Add(question.Id);
+            }
+
+            return new OkObjectResult(quizzesQuestions);           
         }
     }
 }
