@@ -16,6 +16,8 @@ using System;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Headspring.CertificationsQuiz
 {
@@ -24,12 +26,14 @@ namespace Headspring.CertificationsQuiz
         private readonly ILogger<quiz> _logger;
         private readonly IMapper _mapper;
         private readonly Container _container;
+        private readonly CosmosConfiguration _settings;
 
-        public quiz(ILogger<quiz> log, CosmosClient cosmosClient, IMapper mapper)
+        public quiz(ILogger<quiz> log, CosmosClient cosmosClient, IMapper mapper, IOptions<CosmosConfiguration> options)
         {
             _logger = log;
             _mapper = mapper;
-            _container = cosmosClient.GetContainer("CertificationsQuiz", "Items");
+            _settings = options.Value;
+            _container = cosmosClient.GetContainer(_settings.Database, _settings.Container);
         }
 
         [FunctionName("quiz")]
@@ -37,7 +41,7 @@ namespace Headspring.CertificationsQuiz
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<Quiz>), Description = "The OK response")]
         public IActionResult GetQuizzes(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -50,7 +54,7 @@ namespace Headspring.CertificationsQuiz
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(Quiz), Description = "The OK response")]
         public IActionResult GetQuizById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}")] HttpRequest req,
-            [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
             string id)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
@@ -111,12 +115,22 @@ namespace Headspring.CertificationsQuiz
         [OpenApiOperation(operationId: "DeleteQuiz", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
-        public static async Task<IActionResult> DeleteQuiz(
+        public async Task<IActionResult> DeleteQuiz(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "quiz/{id}")]HttpRequest req,
-            [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
             string id)
         {
-            return await Helpers.Delete(client, id);
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            if (quizById == null)
+            {
+                _logger.LogInformation($"Item {id} not found");
+                return new NotFoundResult();
+            }
+
+            var response = await _container.DeleteItemAsync<Quiz>(quizById.Id, new PartitionKey(quizById.Id));
+
+            return new OkResult();
         }      
 
         [FunctionName("quizQuestions")]
@@ -129,18 +143,10 @@ namespace Headspring.CertificationsQuiz
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
-            QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c WHERE c.QuizId ='{id}'");
-
-            List<Question> quizQuestions = new List<Question>();
-
-            var feedIterator = _container.GetItemQueryIterator<Question>(queryDefinition);
-
-            while (feedIterator.HasMoreResults)
-                foreach (var question in await feedIterator.ReadNextAsync())
-                    quizQuestions.Add(question);
+            List<Question> quizQuestions = await Helper.GetQueryResultsAsync<Question>(_container, $"SELECT * FROM c WHERE c.QuizId ='{id}'");
 
             return new OkObjectResult(quizQuestions);           
-        }      
+        }
 
         [FunctionName("quizzesQuestions")]
         [OpenApiOperation(operationId: "GetQuizzesQuestions", tags: new[] { "Quiz" })]
@@ -158,13 +164,8 @@ namespace Headspring.CertificationsQuiz
 
             foreach(var quizId in quizzesIds)
             {
-                QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c WHERE c.QuizId ='{quizId}'");
-
-                var feedIterator = _container.GetItemQueryIterator<Question>(queryDefinition);
-
-                while (feedIterator.HasMoreResults)
-                    foreach (var question in await feedIterator.ReadNextAsync())
-                        quizzesQuestions.Add(question.Id);
+                List<Entity> quizQuestionIds = await Helper.GetQueryResultsAsync<Entity>(_container, $"SELECT c.id FROM c WHERE c.QuizId ='{quizId}'");
+                quizzesQuestions.AddRange(quizQuestionIds.Select(x => x.id));
             }
 
             return new OkObjectResult(quizzesQuestions);           
