@@ -1,0 +1,39 @@
+﻿<form class="row g-3">
+    <div class="col-auto">
+        <label class="form-label">Incorrect choice</label>
+    </div>
+    <div class="col-auto">
+        <input id="choice" class="form-control" @bind="_command" />
+    </div>
+    <div class="col-auto">
+        <button type="button" class="btn btn-primary" @onclick="() => Choices = Choices.Append(_command)">Add</button>
+    </div>
+</form>
+
+@if(Choices != null)
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Incorrect choices</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var choice in Choices)
+        {
+            <tr>
+                <td>@choice</td>
+                <td><a @onclick="() => Choices = Choices.Where(x => x != choice)"><span class="material-icons">delete</span></a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<string> Choices { get; set; }
+
+    string _command = "";
+}

@@ -1,6 +1,5 @@
 ﻿@page "/TakeQuiz/{Ids}"
 @using MediatR
-@using System.Data.Common
 @inject IMediator _mediator
 
 <h3>Quiz</h3><br>
@@ -24,7 +23,7 @@
     }
     @if (IsFinished)
     {
-        <p>Finished.</p>
+        <p><a href="#">Finished.</a></p>
     }
 }
 else

@@ -2,9 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using CertificationsQuiz.Infrastructure;
-using CertificationsQuiz.Shared;
 using MediatR;
 
 namespace CertificationsQuiz.Features

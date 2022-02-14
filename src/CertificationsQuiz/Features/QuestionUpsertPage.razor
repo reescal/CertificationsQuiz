@@ -19,6 +19,8 @@
         <label class="form-label">Answer</label>
         <InputText id="skill" class="form-control" @bind-Value="_command.Answer" />
     </div>
+    
+    <EditableList @ref="_el" Choices="_command.IncorrectChoices" />
 
     <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
@@ -28,6 +30,8 @@
     public string QuizId { get; set; }
     [Parameter]
     public string QuestionId { get; set; }
+
+    EditableList _el;
 
     private string _title = "Create Question";
 
@@ -45,7 +49,7 @@
     private async Task HandleValidSubmit()
     {
         _command.QuizId = QuizId;
-        _command.IncorrectChoices = new[] {"A", "B"};
+        _command.IncorrectChoices = _el.Choices.ToArray();
         await _mediator.Send(_command);
         _navManager.NavigateTo(_navManager.BaseUri + $"quiz/{QuizId}/Questions");
     }
