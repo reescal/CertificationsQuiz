@@ -29,7 +29,7 @@ else
         @foreach (var quiz in _quizzes)
         {
             <tr>
-                <td><input type="checkbox" /></td>
+                <td><input type="checkbox" @onchange="eventArgs => { CheckboxClicked(quiz, eventArgs.Value); }" /></td>
                 <td>@quiz.Certification</td>
                 <td>@quiz.Section</td>
                 <td>@quiz.Subsection</td>
@@ -41,11 +41,17 @@ else
         }
         </tbody>
     </table>
+
+    @if(_checkedQuizzes.Any())
+    {
+        <a class="btn btn-primary" href="/TakeQuiz/@string.Join("&", _checkedQuizzes)" role="button">Take Quiz</a>
+    }
 }
 
 @code
 {
     IEnumerable<Quiz> _quizzes;
+    IEnumerable<string> _checkedQuizzes =  new List<string>();
 
     protected override async Task OnInitializedAsync() => _quizzes = await quizService.Get();
 
@@ -54,4 +60,7 @@ else
         await quizService.Delete(id);
         _quizzes = _quizzes.Where(x => x.Id != id);
     }
+
+    void CheckboxClicked(Quiz quiz, object checkedValue) 
+        => _checkedQuizzes = (bool)checkedValue ? _checkedQuizzes.Append(quiz.Id) : _checkedQuizzes.Where(x => x != quiz.Id);
 }

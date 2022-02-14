@@ -1,0 +1,90 @@
+﻿@page "/TakeQuiz/{Ids}"
+@using MediatR
+@using System.Data.Common
+@inject IMediator _mediator
+
+<h3>Quiz</h3><br>
+
+@if(_quiz != null)
+{
+    <p>Question: @(_questionIndex + 1) / @_quiz.QuestionIds.Count()</p>
+    @if (IsCorrect && !IsFinished)
+    {
+        <span><a class="btn btn-success" @onclick="Next">Next</a></span>
+    }
+    <p>@_currentQuestion.Body</p>
+    @foreach (var choice in GenerateAndRandomizeChoices(_currentQuestion))
+    {
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="flexRadioDefault" checked="@(selectedValue == @choice.Body)" value="@choice.Body" id="@choice.Id" @onclick="@(() => selectedValue = @choice.Body)" @onchange="() => RadioClicked(choice)">
+            <label class="form-check-label" for="@choice.Id">
+                @choice.Body
+            </label>
+        </div>
+    }
+    @if (IsFinished)
+    {
+        <p>Finished.</p>
+    }
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    [Parameter]
+    public string Ids { get; set; }
+
+    int _questionIndex = 0;
+    static Random _rnd = new Random();
+
+    TakeQuiz.ViewModel _quiz;
+    List<string> _randomizedQuiz = new List<string>();
+
+    QuestionUpsert.Command _currentQuestion = new QuestionUpsert.Command();
+
+    class Choice
+    {
+        public string Id { get; set; }
+        public string Body { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _quiz = await _mediator.Send(new TakeQuiz.Query() { Ids = Ids });
+        foreach (var q in _quiz.QuestionIds)
+        {
+            _randomizedQuiz.Add(q);
+        }
+        _randomizedQuiz = _randomizedQuiz.OrderBy(x => _rnd.Next()).ToList();
+        _currentQuestion = await GetCurrentQuestion(_randomizedQuiz.ElementAt(_questionIndex));
+    }
+    async Task<QuestionUpsert.Command> GetCurrentQuestion(string id) 
+        => await _mediator.Send(new QuestionUpsert.Query() { Id = id });
+
+    IEnumerable<Choice> GenerateAndRandomizeChoices(QuestionUpsert.Command command)
+    {
+        IEnumerable<Choice> choices = new List<Choice>();
+        choices = choices.Append(new Choice() {Id = Guid.NewGuid().ToString(), Body = command.Answer});
+        choices = command.IncorrectChoices.Aggregate(choices, (current, c) => current.Append(new Choice() {Id = Guid.NewGuid().ToString(), Body = c}));
+        return choices;
+    }
+
+    bool IsCorrect = false;
+    bool IsFinished = false;
+    string selectedValue = "";
+    void RadioClicked(Choice choice)
+    {
+        IsCorrect = choice.Body == _currentQuestion.Answer;
+        if (_questionIndex == _quiz.QuestionIds.Count() - 1 && IsCorrect) IsFinished = true;
+    }
+
+    async Task Next()
+    {
+        _questionIndex++;
+        _currentQuestion = await GetCurrentQuestion(_randomizedQuiz.ElementAt(_questionIndex));
+        IsCorrect = false;
+        selectedValue = "";
+    }
+}
