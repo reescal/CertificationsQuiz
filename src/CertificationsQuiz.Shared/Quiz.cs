@@ -18,4 +18,9 @@
         public string id { get; set; }
         public string Type = "Quiz";
     }
+
+    public class Entity
+    {
+        public string id { get; set; }
+    }
 }

@@ -1,25 +1,24 @@
-using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Cosmos;
 
 namespace Headspring.CertificationsQuiz
 {
-    public static class Helpers
+    public static class Helper
     {
-        public static async Task<IActionResult> Delete(DocumentClient client, string id)
+        public static async Task<List<T>> GetQueryResultsAsync<T>(Container _container, string query)
         {
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("CertificationsQuiz", "Items");
-            var document = client.CreateDocumentQuery(collectionUri).Where(t => t.Id == id)
-                    .AsEnumerable().FirstOrDefault();
+            List<T> items = new List<T>();
 
-            if (document == null)
-                return new NotFoundResult();
-                
-            await client.DeleteDocumentAsync(document.SelfLink, 
-                new Microsoft.Azure.Documents.Client.RequestOptions { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(document.Id) });
-            return new OkResult();
+            QueryDefinition queryDefinition = new QueryDefinition(query);
+
+            var feedIterator = _container.GetItemQueryIterator<T>(queryDefinition);
+
+            while (feedIterator.HasMoreResults)
+                foreach (var result in await feedIterator.ReadNextAsync())
+                    items.Add(result);
+            
+            return items;
         }
     }
 }
