@@ -12,5 +12,6 @@ namespace CertificationsQuiz.Infrastructure
         Task Delete(string id);
 
         Task<IEnumerable<Question>> GetQuizQuestions(string id);
+        Task<IEnumerable<string>> GetQuizzesQuestions(IEnumerable<string> quizzesIds);
     }
 }

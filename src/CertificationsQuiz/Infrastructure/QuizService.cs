@@ -50,5 +50,17 @@ namespace CertificationsQuiz.Infrastructure
             return await JsonSerializer.DeserializeAsync<IEnumerable<Question>>
                 (apiResponse, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
+
+        public async Task<IEnumerable<string>> GetQuizzesQuestions(IEnumerable<string> quizzesIds)
+        {
+            var apiResponse = await _httpClient.PostAsJsonAsync($"api/quizzes/questions", quizzesIds);
+
+            if (!apiResponse.IsSuccessStatusCode)
+                return null;
+
+            var stream = await apiResponse.Content.ReadAsStreamAsync();
+            return await JsonSerializer.DeserializeAsync<IEnumerable<string>>
+                (stream, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+        }
     }
 }

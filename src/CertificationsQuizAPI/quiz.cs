@@ -16,6 +16,8 @@ using System;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Headspring.CertificationsQuiz
 {
@@ -24,20 +26,22 @@ namespace Headspring.CertificationsQuiz
         private readonly ILogger<quiz> _logger;
         private readonly IMapper _mapper;
         private readonly Container _container;
+        private readonly CosmosConfiguration _settings;
 
-        public quiz(ILogger<quiz> log, CosmosClient cosmosClient, IMapper mapper)
+        public quiz(ILogger<quiz> log, CosmosClient cosmosClient, IMapper mapper, IOptions<CosmosConfiguration> options)
         {
             _logger = log;
             _mapper = mapper;
-            _container = cosmosClient.GetContainer("CertificationsQuiz", "Items");
+            _settings = options.Value;
+            _container = cosmosClient.GetContainer(_settings.Database, _settings.Container);
         }
 
         [FunctionName("quiz")]
         [OpenApiOperation(operationId: "GetQuizzes", tags: new[] { "Quiz" })]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(IEnumerable<Quiz>), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<Quiz>), Description = "The OK response")]
         public IActionResult GetQuizzes(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -47,10 +51,10 @@ namespace Headspring.CertificationsQuiz
         [FunctionName("quizById")]
         [OpenApiOperation(operationId: "GetQuizById", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(Quiz), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(Quiz), Description = "The OK response")]
         public IActionResult GetQuizById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}")] HttpRequest req,
-            [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
             string id)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
@@ -110,36 +114,61 @@ namespace Headspring.CertificationsQuiz
         [FunctionName("deleteQuiz")]
         [OpenApiOperation(operationId: "DeleteQuiz", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
-        public static async Task<IActionResult> DeleteQuiz(
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
+        public async Task<IActionResult> DeleteQuiz(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "quiz/{id}")]HttpRequest req,
-            [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
             string id)
         {
-            return await Helpers.Delete(client, id);
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            if (quizById == null)
+            {
+                _logger.LogInformation($"Item {id} not found");
+                return new NotFoundResult();
+            }
+
+            var response = await _container.DeleteItemAsync<Quiz>(quizById.Id, new PartitionKey(quizById.Id));
+
+            return new OkResult();
         }      
 
         [FunctionName("quizQuestions")]
         [OpenApiOperation(operationId: "GetQuizQuestions", tags: new[] { "Quiz" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(IEnumerable<Question>), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<Question>), Description = "The OK response")]
         public async Task<IActionResult> GetQuizQuestions(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}/questions")] HttpRequest req,
             string id)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
-            QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c WHERE c.QuizId ='{id}'");
+            List<Question> quizQuestions = await Helper.GetQueryResultsAsync<Question>(_container, $"SELECT * FROM c WHERE c.QuizId ='{id}'");
 
-            List<Question> quizQuestions = new List<Question>();
+            return new OkObjectResult(quizQuestions);           
+        }
 
-            var feedIterator = _container.GetItemQueryIterator<Question>(queryDefinition);
+        [FunctionName("quizzesQuestions")]
+        [OpenApiOperation(operationId: "GetQuizzesQuestions", tags: new[] { "Quiz" })]
+        [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(IEnumerable<string>), Description = "Quizzes", Required = true)]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<string>), Description = "The OK response")]
+        public async Task<IActionResult> GetQuizzesQuestions(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "quizzes/questions")] HttpRequest req)
+        {
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
 
-            while (feedIterator.HasMoreResults)
-                foreach (var question in await feedIterator.ReadNextAsync())
-                    quizQuestions.Add(question);
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var quizzesIds = JsonConvert.DeserializeObject<IEnumerable<string>>(requestBody);
 
-            return new OkObjectResult(quizQuestions);
+            List<string> quizzesQuestions = new List<string>();
+
+            foreach(var quizId in quizzesIds)
+            {
+                List<Entity> quizQuestionIds = await Helper.GetQueryResultsAsync<Entity>(_container, $"SELECT c.id FROM c WHERE c.QuizId ='{quizId}'");
+                quizzesQuestions.AddRange(quizQuestionIds.Select(x => x.id));
+            }
+
+            return new OkObjectResult(quizzesQuestions);           
         }
     }
 }

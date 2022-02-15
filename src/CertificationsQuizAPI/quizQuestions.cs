@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using System;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Documents.Client;
+using Microsoft.Extensions.Options;
 
 namespace Headspring.CertificationsQuiz
 {
@@ -22,12 +23,14 @@ namespace Headspring.CertificationsQuiz
         private readonly ILogger<quiz> _logger;
         private readonly IMapper _mapper;
         private readonly Container _container;
+        private readonly CosmosConfiguration _settings;
 
-        public quizQuestions(ILogger<quiz> log, CosmosClient cosmosClient, IMapper mapper)
+        public quizQuestions(ILogger<quiz> log, CosmosClient cosmosClient, IMapper mapper, IOptions<CosmosConfiguration> options)
         {
             _logger = log;
             _mapper = mapper;
-            _container = cosmosClient.GetContainer("CertificationsQuiz", "Items");
+            _settings = options.Value;
+            _container = cosmosClient.GetContainer(_settings.Database, _settings.Container);
         }
 
         [FunctionName("questionById")]
@@ -36,7 +39,7 @@ namespace Headspring.CertificationsQuiz
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(Question), Description = "The OK response")]
         public IActionResult GetQuizById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "question/{id}")] HttpRequest req,
-            [CosmosDB(databaseName: "CertificationsQuiz", collectionName: "Items", ConnectionStringSetting = "CosmosDBConnection", Id = "{id}", PartitionKey = "{id}")]Question questionById,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", Id = "{id}", PartitionKey = "{id}")]Question questionById,
             string id)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
@@ -108,12 +111,22 @@ namespace Headspring.CertificationsQuiz
         [OpenApiOperation(operationId: "DeleteQuestion", tags: new[] { "Question" })]
         [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "The **Id** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
-        public static async Task<IActionResult> DeleteQuestion(
+        public async Task<IActionResult> DeleteQuestion(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "question/{id}")]HttpRequest req,
-            [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "%CosmosConfiguration:ConnectionString%", Id = "{id}", PartitionKey = "{id}")]Question questionById,
             string id)
         {
-            return await Helpers.Delete(client, id);
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            if (questionById == null)
+            {
+                _logger.LogInformation($"Item {id} not found");
+                return new NotFoundResult();
+            }
+            
+            var response = await _container.DeleteItemAsync<Question>(questionById.Id, new PartitionKey(questionById.Id));
+
+            return new OkResult();
         }
     }
 }
