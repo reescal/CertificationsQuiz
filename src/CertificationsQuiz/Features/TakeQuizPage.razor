@@ -7,17 +7,14 @@
 @if(_quiz != null)
 {
     <p>Question: @(_questionIndex + 1) / @_quiz.QuestionIds.Count()</p>
-    @if (IsCorrect && !IsFinished)
-    {
-        <span><a class="btn btn-success" @onclick="Next">Next</a></span>
-    }
-    <p>@_currentQuestion.Body</p>
+    <button type="button" class="btn btn-success" @onclick="Next" disabled="@(!IsCorrect || IsFinished)">Next</button>
+    <MarkdownViewer Value="@_currentQuestion.Body" />
     @foreach (var choice in GenerateAndRandomizeChoices(_currentQuestion))
     {
         <div class="form-check">
             <input class="form-check-input" type="radio" name="flexRadioDefault" checked="@(selectedValue == @choice.Body)" value="@choice.Body" id="@choice.Id" @onclick="@(() => selectedValue = @choice.Body)" @onchange="() => RadioClicked(choice)">
             <label class="form-check-label" for="@choice.Id">
-                @choice.Body
+                <MarkdownViewer Value="@choice.Body" />
             </label>
         </div>
     }
