@@ -25,11 +25,11 @@ namespace azure_functions_cosmosclient
         public override void Configure(IFunctionsHostBuilder builder)
         {
            builder.Services.AddSingleton(s => {
-                var connectionString = Configuration["CosmosConfiguration:ConnectionString"];
+                var connectionString = Configuration["CosmosDBConnection"];
                 if (string.IsNullOrEmpty(connectionString))
                 {
                     throw new InvalidOperationException(
-                        "Please specify a valid CosmosConfiguration:ConnectionString in the appSettings.json file or your Azure Functions Settings.");
+                        "Please specify a valid CosmosDBConnection in the appSettings.json file or your Azure Functions Settings.");
                 }
 
                 return new CosmosClientBuilder(connectionString)

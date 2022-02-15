@@ -41,7 +41,7 @@ namespace Headspring.CertificationsQuiz
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IEnumerable<Quiz>), Description = "The OK response")]
         public IActionResult GetQuizzes(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "CosmosConfiguration:ConnectionString", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "CosmosDBConnection", SqlQuery = "SELECT * FROM c WHERE c.Type = 'Quiz'")]IEnumerable<Quiz> quizzes)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -54,7 +54,7 @@ namespace Headspring.CertificationsQuiz
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(Quiz), Description = "The OK response")]
         public IActionResult GetQuizById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "quiz/{id}")] HttpRequest req,
-            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "CosmosConfiguration:ConnectionString", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "CosmosDBConnection", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
             string id)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
@@ -117,7 +117,7 @@ namespace Headspring.CertificationsQuiz
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> DeleteQuiz(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "quiz/{id}")]HttpRequest req,
-            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "CosmosConfiguration:ConnectionString", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
+            [CosmosDB(databaseName: "%CosmosConfiguration:Database%", collectionName: "%CosmosConfiguration:Container%", ConnectionStringSetting = "CosmosDBConnection", Id = "{id}", PartitionKey = "{id}")]Quiz quizById,
             string id)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
