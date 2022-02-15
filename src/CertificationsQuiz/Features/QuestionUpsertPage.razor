@@ -12,12 +12,14 @@
 
     <div class="mb-3">
         <label class="form-label">Body</label>
-        <InputText id="certification" class="form-control" @bind-Value="_command.Body" />
+        <MarkdownEditor Id="certification" EditMode="EditMode.Markdown" LockEditMode="true" 
+                        PreviewStyle="MarkdownPreviewStyle.Tabs" @bind-Value="_command.Body" />
     </div>
 
     <div class="mb-3">
         <label class="form-label">Answer</label>
-        <InputText id="skill" class="form-control" @bind-Value="_command.Answer" />
+        <MarkdownEditor Id="skill" EditMode="EditMode.Markdown" LockEditMode="true" 
+                        PreviewStyle="MarkdownPreviewStyle.Tabs" @bind-Value="_command.Answer" />
     </div>
     
     <EditableList @ref="_el" Choices="_command.IncorrectChoices" />

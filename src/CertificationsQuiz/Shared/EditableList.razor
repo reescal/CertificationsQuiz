@@ -3,10 +3,11 @@
         <label class="form-label">Incorrect choice</label>
     </div>
     <div class="col-auto">
-        <input id="choice" class="form-control" @bind="_command" />
+        <MarkdownEditor Id="choice" EditMode="EditMode.Markdown" LockEditMode="true" 
+                        PreviewStyle="MarkdownPreviewStyle.Tabs" @bind-Value="_command" />
     </div>
     <div class="col-auto">
-        <button type="button" class="btn btn-primary" @onclick="() => Choices = Choices.Append(_command)">Add</button>
+        <button type="button" class="btn btn-primary" @onclick="() => Add(_command)">Add</button>
     </div>
 </form>
 
@@ -32,8 +33,11 @@
 }
 
 @code {
+
     [Parameter]
     public IEnumerable<string> Choices { get; set; }
 
     string _command = "";
+
+    void Add(string choice) => Choices = Choices == null ? new List<string>() {choice} : Choices.Append(choice);
 }

@@ -17,6 +17,8 @@ namespace CertificationsQuiz
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
+            builder.Services.AddMarkdownEditor();
+
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
             builder.Services.AddHttpClient("quiz", x => x.BaseAddress = new Uri(builder.Configuration["QuizAPIPrefix"]));
